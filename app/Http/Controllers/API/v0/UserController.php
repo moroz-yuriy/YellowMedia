@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 class UserController extends \App\Http\Controllers\Controller
 {
     /**
+     * @param Request $request
+     * @return JsonResponse
      * @throws ValidationException
      */
     public function register(Request $request): JsonResponse
@@ -37,7 +39,7 @@ class UserController extends \App\Http\Controllers\Controller
 
         $user = User::create($data);
 
-        return response()->json($user);
+        return response()->json($user, 201);
     }
 
     /**
@@ -66,13 +68,20 @@ class UserController extends \App\Http\Controllers\Controller
         }
     }
 
-    public function recoverPassword(Request $request)
+    /**
+     * @param Request $request
+     * @return JsonResponse|void
+     * @throws ValidationException
+     */
+    public function recoverPassword(Request $request): JsonResponse
     {
         $this->validate($request, [
             'email' => 'required|email',
         ]);
 
-        $user = User::where('email', $request->input('email'))->first();
+        if (!$user = User::where('email', $request->input('email'))->first()) {
+            return response()->json([], 404);
+        }
 
         $user->recovery_token = Base64_encode(Str::random(40));
         $user->save();
@@ -80,6 +89,8 @@ class UserController extends \App\Http\Controllers\Controller
         /**
          * TODO: send email with recovery_token
          */
+
+        return response()->json([$user->recovery_token], 201);
     }
 
     /**
